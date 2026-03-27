@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LiveFacilitate — Domain Model Prototype</title>
+  <style>
+    /* ====================================================
+       CSS RESET & VARIABLES
+    ==================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+      /* Palette */
+      --bg:          #f0f2f5;
+      --surface:     #ffffff;
+      --surface-alt: #f8f9fb;
+      --border:      #e2e6ea;
+      --border-dark: #cdd3da;
+
+      --text-primary:   #1a202c;
+      --text-secondary: #4a5568;
+      --text-muted:     #8a94a6;
+
+      --blue:        #3b82f6;
+      --blue-light:  #eff6ff;
+      --blue-dark:   #1d4ed8;
+      --green:       #10b981;
+      --green-light: #ecfdf5;
+      --amber:       #f59e0b;
+      --amber-light: #fffbeb;
+      --red:         #ef4444;
+      --red-light:   #fef2f2;
+      --purple:      #8b5cf6;
+      --purple-light:#f5f3ff;
+      --indigo:      #6366f1;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+
+      --radius-sm: 6px;
+      --radius:    10px;
+      --radius-lg: 14px;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ====================================================
+       APP SHELL
+    ==================================================== */
+    #app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+      z-index: 100;
+    }
+    #app-header .logo {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: -.3px;
+    }
+    #app-header .logo span { color: var(--text-primary); }
+    #app-header .tagline {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    #app-body {
+      display: grid;
+      grid-template-columns: 240px 1fr 420px;
+      grid-template-rows: 1fr;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 52px);
+    }
+
+    /* ====================================================
+       SIDEBAR (Programs)
+    ==================================================== */
+    #sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar-header h2 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted);
+    }
+    .sidebar-body { flex: 1; overflow-y: auto; padding: 8px; }
+
+    .program-item {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background .15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .program-item:hover { background: var(--surface-alt); }
+    .program-item.selected { background: var(--blue-light); }
+    .program-item .prog-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .program-item .prog-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .program-item .prog-count {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .sidebar-footer {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ====================================================
+       MAIN CENTER
+    ==================================================== */
+    #main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    #main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ====================================================
+       PARTICIPANT COLUMN
+    ==================================================== */
+    #participant-column {
+      background: var(--surface-alt);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .participant-column-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .participant-column-header h2 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted);
+    }
+    .participant-panels {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ====================================================
+       GENERIC UI COMPONENTS
+    ==================================================== */
+
+    /* Button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .15s, border-color .15s, opacity .15s;
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+    .btn-primary:not(:disabled):hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-primary);
+      border-color: var(--border-dark);
+    }
+    .btn-secondary:not(:disabled):hover { background: var(--surface-alt); }
+    .btn-success {
+      background: var(--green);
+      color: #fff;
+      border-color: var(--green);
+    }
+    .btn-success:not(:disabled):hover { background: #059669; border-color: #059669; }
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+      border-color: var(--red);
+    }
+    .btn-danger:not(:disabled):hover { background: #dc2626; border-color: #dc2626; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: transparent;
+      padding: 5px 8px;
+    }
+    .btn-ghost:not(:disabled):hover { background: var(--bg); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-xs { padding: 3px 8px; font-size: 11px; }
+    .btn-icon { padding: 6px 8px; }
+    .btn-block { width: 100%; justify-content: center; }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      white-space: nowrap;
+    }
+    .badge-dot::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .7;
+    }
+    .badge-draft     { background: #f1f5f9; color: #64748b; }
+    .badge-published { background: var(--green-light); color: #065f46; }
+    .badge-scheduled { background: var(--amber-light); color: #92400e; }
+    .badge-live      { background: #fef2f2; color: #991b1b; }
+    .badge-live .badge-dot::before { animation: pulse 1.2s ease-in-out infinite; }
+    .badge-ended     { background: #f1f5f9; color: #475569; }
+    .badge-not_started { background: #f1f5f9; color: #64748b; }
+    .badge-active    { background: var(--blue-light); color: #1d4ed8; }
+    .badge-completed { background: var(--green-light); color: #065f46; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: .4; }
+      50% { opacity: 1; }
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .card-body { padding: 16px; }
+    .card-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    /* Section label */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+    }
+    .empty-state .empty-icon { font-size: 28px; margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; }
+
+    /* Form elements */
+    input[type=text], textarea {
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--surface);
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      width: 100%;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input[type=text]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+    textarea { resize: vertical; min-height: 70px; }
+
+    /* ====================================================
+       PROGRAM EDITOR
+    ==================================================== */
+    .program-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .program-header-left { display: flex; flex-direction: column; gap: 4px; }
+    .program-title-row { display: flex; align-items: center; gap: 10px; }
+    .program-title-row h2 { font-size: 18px; font-weight: 700; }
+    .program-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .activities-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .activity-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .activity-card-header {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .activity-type-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .icon-quiz    { background: var(--purple-light); }
+    .icon-poll    { background: var(--amber-light); }
+    .icon-content { background: var(--blue-light); }
+
+    .activity-card-title { flex: 1; }
+    .activity-card-title .act-title { font-size: 13px; font-weight: 600; }
+    .activity-card-title .act-type  { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; }
+
+    .activity-card-body { padding: 12px 14px; }
+
+    .question-list { display: flex; flex-direction: column; gap: 8px; }
+    .question-item { font-size: 12px; color: var(--text-secondary); }
+    .question-item .q-prompt { font-weight: 500; margin-bottom: 3px; }
+    .question-item .q-options { display: flex; flex-wrap: wrap; gap: 4px; }
+    .q-option-chip {
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .q-option-chip.correct {
+      background: var(--green-light);
+      border-color: #a7f3d0;
+      color: #065f46;
+    }
+
+    .poll-options-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .poll-option-chip {
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: var(--amber-light);
+      border: 1px solid #fcd34d;
+      font-size: 11px;
+      color: #92400e;
+    }
+    .content-preview {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Add-activity toolbar */
+    .add-activity-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .add-activity-label { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
+
+    /* ====================================================
+       SESSION PANEL
+    ==================================================== */
+    .session-panel { }
+
+    .session-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .session-info { display: flex; align-items: center; gap: 10px; }
+    .session-info .session-name { font-size: 14px; font-weight: 600; }
+
+    .session-progress {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .progress-pill {
+      height: 6px;
+      border-radius: 99px;
+      background: var(--border);
+      flex: 1;
+      min-width: 80px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--blue);
+      border-radius: 99px;
+      transition: width .3s;
+    }
+    .progress-label { font-size: 12px; color: var(--text-muted); }
+
+    /* Current activity block */
+    .current-activity-block {
+      border: 2px solid var(--blue);
+      border-radius: var(--radius);
+      background: var(--blue-light);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .current-activity-block .ca-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .current-activity-block .ca-title { font-size: 13px; font-weight: 600; }
+
+    .activity-controls { display: flex; flex-direction: column; gap: 8px; }
+    .controls-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* Question controls */
+    .quiz-runtime {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .quiz-runtime .qr-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 4px; }
+    .quiz-runtime .qr-prompt { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+
+    /* Live stats */
+    .live-stats {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+    .live-stats .ls-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 8px; }
+    .stat-option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .stat-option-row:last-child { margin-bottom: 0; }
+    .stat-bar-wrap {
+      flex: 1;
+      height: 20px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .stat-bar {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--blue);
+      transition: width .4s;
+      min-width: 0;
+    }
+    .stat-bar.correct { background: var(--green); }
+    .stat-bar.wrong   { background: var(--red); }
+    .stat-bar.poll-bar { background: var(--amber); }
+    .stat-bar-label {
+      position: absolute;
+      left: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-primary);
+      pointer-events: none;
+    }
+    .stat-option-name { font-size: 12px; width: 80px; flex-shrink: 0; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stat-count { font-size: 12px; font-weight: 600; width: 20px; text-align: right; flex-shrink: 0; }
+
+    /* Activity list in session (overview) */
+    .session-activities-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .sa-item {
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      font-size: 12px;
+    }
+    .sa-item.sa-active {
+      border-color: var(--blue);
+      background: var(--blue-light);
+    }
+    .sa-item.sa-completed {
+      background: var(--surface-alt);
+      border-color: var(--border);
+    }
+    .sa-item .sa-index { font-size: 11px; color: var(--text-muted); width: 16px; text-align: center; }
+    .sa-item .sa-title { flex: 1; font-weight: 500; }
+    .sa-item .sa-runtime-state { font-size: 10px; color: var(--text-muted); }
+
+    /* ====================================================
+       PARTICIPANT PANEL
+    ==================================================== */
+    .participant-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      flex: 1;
+    }
+    .pp-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pp-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .avatar-a { background: var(--blue); }
+    .avatar-b { background: var(--purple); }
+    .pp-name { font-size: 13px; font-weight: 600; }
+    .pp-role { font-size: 11px; color: var(--text-muted); }
+    .pp-body { padding: 14px; }
+
+    .pp-waiting {
+      text-align: center;
+      padding: 24px 12px;
+    }
+    .pp-waiting .wait-icon { font-size: 22px; margin-bottom: 8px; }
+    .pp-waiting p { font-size: 12px; color: var(--text-muted); }
+
+    /* Participant content view */
+    .pp-content-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+
+    /* Participant answer buttons */
+    .pp-options { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .pp-option-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-dark);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--font);
+      color: var(--text-primary);
+      text-align: left;
+      transition: border-color .15s, background .15s;
+      font-weight: 500;
+    }
+    .pp-option-btn:hover:not(:disabled) { border-color: var(--blue); background: var(--blue-light); }
+    .pp-option-btn:disabled { cursor: not-allowed; }
+    .pp-option-btn.selected { border-color: var(--blue); background: var(--blue-light); }
+    .pp-option-btn.correct  { border-color: var(--green); background: var(--green-light); }
+    .pp-option-btn.wrong    { border-color: var(--red); background: var(--red-light); }
+    .pp-option-btn.poll-voted { border-color: var(--amber); background: var(--amber-light); }
+    .pp-option-letter {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .pp-result-hint {
+      font-size: 11px;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pp-result-hint.correct-hint { color: var(--green); }
+    .pp-result-hint.wrong-hint   { color: var(--red); }
+
+    .pp-prompt { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    .pp-activity-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 6px; }
+
+    /* ====================================================
+       MODAL
+    ==================================================== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.3);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .modal-box {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 420px;
+      max-width: 95vw;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 15px; font-weight: 700; }
+    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* Utility */
+    .flex { display: flex; }
+    .flex-col { display: flex; flex-direction: column; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .text-muted { color: var(--text-muted); }
+    .text-sm { font-size: 12px; }
+    .font-medium { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .mt-4 { margin-top: 4px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mb-4 { margin-bottom: 4px; }
+    .mb-8 { margin-bottom: 8px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- APP HEADER -->
+<header id="app-header">
+  <div class="logo">Live<span>Facilitate</span></div>
+  <span class="tagline">Domain Model Prototype</span>
+</header>
+
+<!-- APP BODY -->
+<div id="app-body">
+
+  <!-- LEFT SIDEBAR: Programs -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h2>Programs</h2>
+    </div>
+    <div class="sidebar-body" id="program-list"></div>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary btn-block" id="btn-new-program">+ New Program</button>
+    </div>
+  </aside>
+
+  <!-- CENTER MAIN -->
+  <main id="main">
+    <div id="main-content">
+      <!-- Rendered dynamically -->
+    </div>
+  </main>
+
+  <!-- RIGHT: Participant Column -->
+  <aside id="participant-column">
+    <div class="participant-column-header">
+      <h2>Participant Views</h2>
+    </div>
+    <div class="participant-panels" id="participant-panels"></div>
+  </aside>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script>
+/* =============================================================================
+   DOMAIN MODEL PROTOTYPE — LiveFacilitate
+   =============================================================================
+   Sections:
+   1. State
+   2. Seed Data
+   3. Helpers / Utilities
+   4. Rendering — Program List (Sidebar)
+   5. Rendering — Main Panel
+   6. Rendering — Participant Panels
+   7. Modal System
+   8. Event Handlers / Actions
+   9. Bootstrap
+   ============================================================================= */
+
+// ============================================================================
+// 1. STATE
+// ============================================================================
+
+let state = {
+  programs: [],
+  selectedProgramId: null,
+  session: null,        // { id, programId, status, currentActivityIndex, activityRuntimes[] }
+  participants: [],     // [{ id, name, responses: { [sessionActivityKey]: { answer, pollVote } } }]
+  nextId: 100,
+};
+
+function uid() { return ++state.nextId; }
+
+/* Activity runtime shape:
+   {
+     activityId,
+     state: 'not_started' | 'active' | 'completed',
+     // quiz-specific
+     currentQuestionIndex: number,
+     questionState: 'collecting_answers' | 'showing_results',
+     // poll-specific
+     pollState: 'idle' | 'open' | 'closed' | 'showing_results',
+   }
+*/
+
+// ============================================================================
+// 2. SEED DATA
+// ============================================================================
+
+function seedData() {
+  const q1 = { id: uid(), prompt: 'What does HTML stand for?', options: ['HyperText Markup Language','High Transfer Machine Language','HyperText Machine Language','High Text Markup Language'], correctIndex: 0 };
+  const q2 = { id: uid(), prompt: 'Which CSS property controls text size?', options: ['font-size','text-size','text-weight','type-size'], correctIndex: 0 };
+  const q3 = { id: uid(), prompt: 'What does the "V" stand for in MVP?', options: ['Virtual','Viable','Visual','Variable'], correctIndex: 1 };
+
+  const quizActivity = {
+    id: uid(),
+    type: 'quiz',
+    title: 'Web Fundamentals Quiz',
+    questions: [q1, q2, q3],
+  };
+
+  const pollActivity = {
+    id: uid(),
+    type: 'poll',
+    title: 'Team Satisfaction Poll',
+    prompt: 'How satisfied are you with the current onboarding process?',
+    options: ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'],
+  };
+
+  const contentActivity = {
+    id: uid(),
+    type: 'content',
+    title: 'Welcome & Agenda',
+    content: 'Welcome to the session! Today we will cover the fundamentals of our platform, gather your feedback on recent changes, and walk through upcoming features on the roadmap. Please take a moment to introduce yourself in the chat before we begin.',
+  };
+
+  const p1 = {
+    id: uid(),
+    title: 'Onboarding Workshop',
+    status: 'published',
+    activities: [quizActivity, pollActivity, contentActivity],
+  };
+
+  const p2 = {
+    id: uid(),
+    title: 'Product Review Session',
+    status: 'draft',
+    activities: [
+      {
+        id: uid(),
+        type: 'content',
+        title: 'Product Roadmap Overview',
+        content: 'This session will walk through the Q3 product roadmap, including key milestones, feature priorities, and dependency risks.',
+      },
+      {
+        id: uid(),
+        type: 'poll',
+        title: 'Feature Priority Vote',
+        prompt: 'Which feature should we prioritize for Q3?',
+        options: ['Improved reporting', 'Mobile app', 'API integrations', 'Better search'],
+      },
+    ],
+  };
+
+  state.programs = [p1, p2];
+  state.selectedProgramId = p1.id;
+
+  state.participants = [
+    { id: uid(), name: 'Participant A', responses: {} },
+    { id: uid(), name: 'Participant B', responses: {} },
+  ];
+}
+
+// ============================================================================
+// 3. HELPERS / UTILITIES
+// ============================================================================
+
+function getProgram(id) { return state.programs.find(p => p.id === id); }
+function getSelectedProgram() { return getProgram(state.selectedProgramId); }
+
+function getActivityRuntime(activityId) {
+  if (!state.session) return null;
+  return state.session.activityRuntimes.find(r => r.activityId === activityId) || null;
+}
+
+function getCurrentActivity() {
+  if (!state.session) return null;
+  const prog = getProgram(state.session.programId);
+  if (!prog) return null;
+  return prog.activities[state.session.currentActivityIndex] || null;
+}
+
+function getCurrentRuntime() {
+  const act = getCurrentActivity();
+  if (!act) return null;
+  return getActivityRuntime(act.id);
+}
+
+function badgeHtml(status, text) {
+  return `<span class="badge badge-dot badge-${status}">${text || status}</span>`;
+}
+
+function actTypeIcon(type) {
+  const icons = { quiz: '🧩', poll: '📊', content: '📝' };
+  return icons[type] || '📄';
+}
+
+function actTypeClass(type) {
+  const cls = { quiz: 'icon-quiz', poll: 'icon-poll', content: 'icon-content' };
+  return cls[type] || '';
+}
+
+function letterFor(i) { return String.fromCharCode(65 + i); }
+
+function responseKey(sessionId, activityId, questionId) {
+  return questionId
+    ? `${sessionId}_${activityId}_${questionId}`
+    : `${sessionId}_${activityId}`;
+}
+
+// Count responses for a quiz question
+function quizResponseCounts(activity, questionIndex) {
+  if (!state.session) return null;
+  const q = activity.questions[questionIndex];
+  if (!q) return null;
+  const counts = new Array(q.options.length).fill(0);
+  for (const participant of state.participants) {
+    const key = responseKey(state.session.id, activity.id, q.id);
+    const response = participant.responses[key];
+    if (response !== undefined && response >= 0 && response < counts.length) counts[response]++;
+  }
+  return counts;
+}
+
+// Count responses for a poll
+function pollResponseCounts(activity) {
+  if (!state.session) return null;
+  const counts = new Array(activity.options.length).fill(0);
+  for (const participant of state.participants) {
+    const key = responseKey(state.session.id, activity.id, null);
+    const voteIndex = participant.responses[key];
+    if (voteIndex !== undefined && voteIndex >= 0 && voteIndex < counts.length) counts[voteIndex]++;
+  }
+  return counts;
+}
+
+function totalResponses(counts) {
+  return counts.reduce((a, b) => a + b, 0);
+}
+
+function initActivityRuntime(activity) {
+  const base = { activityId: activity.id, state: 'not_started' };
+  if (activity.type === 'quiz') {
+    return { ...base, currentQuestionIndex: 0, questionState: 'collecting_answers' };
+  }
+  if (activity.type === 'poll') {
+    return { ...base, pollState: 'idle' };
+  }
+  return base;
+}
+
+function runtimeStateLabel(rt) {
+  if (!rt) return 'not started';
+  if (rt.state === 'not_started') return 'not started';
+  if (rt.state === 'completed') return 'completed';
+  if (rt.state === 'active') {
+    // more granular for quiz/poll
+    return 'active';
+  }
+  return rt.state;
+}
+
+// ============================================================================
+// 4. RENDERING — PROGRAM LIST (Sidebar)
+// ============================================================================
+
+function renderProgramList() {
+  const el = document.getElementById('program-list');
+  if (!el) return;
+
+  if (state.programs.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No programs yet</p></div>`;
+    return;
+  }
+
+  el.innerHTML = state.programs.map(p => {
+    const selected = p.id === state.selectedProgramId;
+    return `
+      <div class="program-item ${selected ? 'selected' : ''}" data-program-id="${p.id}">
+        <div class="prog-title">${escHtml(p.title)}</div>
+        <div class="prog-meta">
+          ${badgeHtml(p.status)}
+          <span class="prog-count">${p.activities.length} ${p.activities.length === 1 ? 'activity' : 'activities'}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============================================================================
+// 5. RENDERING — MAIN PANEL
+// ============================================================================
+
+function renderMain() {
+  const el = document.getElementById('main-content');
+  if (!el) return;
+
+  const prog = getSelectedProgram();
+  if (!prog) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">👈</div><p>Select a program from the sidebar to get started.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    ${renderProgramHeader(prog)}
+    ${renderActivitiesSection(prog)}
+    ${renderSessionPanel(prog)}
+  `;
+}
+
+function renderProgramHeader(prog) {
+  const canStart = prog.status === 'published' && (!state.session || state.session.status === 'ended');
+  const isRunning = state.session && state.session.programId === prog.id && state.session.status !== 'ended';
+  return `
+    <div class="card">
+      <div class="card-body">
+        <div class="program-header">
+          <div class="program-header-left">
+            <div class="program-title-row">
+              <h2>${escHtml(prog.title)}</h2>
+              ${badgeHtml(prog.status)}
+            </div>
+            <span class="text-sm text-muted">${prog.activities.length} ${prog.activities.length === 1 ? 'activity' : 'activities'}</span>
+          </div>
+          <div class="program-header-actions">
+            ${prog.status === 'draft' ? `<button class="btn btn-secondary btn-sm" data-action="publish-program" data-id="${prog.id}">Publish Program</button>` : ''}
+            ${canStart ? `<button class="btn btn-success btn-sm" data-action="start-session" data-id="${prog.id}">▶ Start Session</button>` : ''}
+            ${isRunning ? `<span class="text-sm text-muted">(session running)</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderActivitiesSection(prog) {
+  const addRow = `
+    <div class="add-activity-row">
+      <span class="add-activity-label">Add activity:</span>
+      <button class="btn btn-secondary btn-sm" data-action="add-activity" data-type="quiz" data-prog-id="${prog.id}">+ Quiz</button>
+      <button class="btn btn-secondary btn-sm" data-action="add-activity" data-type="poll" data-prog-id="${prog.id}">+ Poll</button>
+      <button class="btn btn-secondary btn-sm" data-action="add-activity" data-type="content" data-prog-id="${prog.id}">+ Content</button>
+    </div>`;
+
+  if (prog.activities.length === 0) {
+    return `
+      <div class="card">
+        <div class="card-header"><h3>Activities</h3></div>
+        <div class="card-body">
+          <div class="empty-state"><div class="empty-icon">📭</div><p>No activities yet. Add one below.</p></div>
+          ${addRow}
+        </div>
+      </div>`;
+  }
+
+  const cards = prog.activities.map((act, i) => renderActivityCard(act, i)).join('');
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h3>Activities <span class="text-muted font-medium">(${prog.activities.length})</span></h3>
+      </div>
+      <div class="card-body">
+        <div class="activities-grid">${cards}</div>
+      </div>
+      <div class="card-footer">${addRow}</div>
+    </div>`;
+}
+
+function renderActivityCard(act, index) {
+  let body = '';
+  if (act.type === 'quiz') {
+    const qList = act.questions.map((q, qi) => `
+      <div class="question-item">
+        <div class="q-prompt">Q${qi+1}: ${escHtml(q.prompt)}</div>
+        <div class="q-options">
+          ${q.options.map((o, oi) => `<span class="q-option-chip ${oi === q.correctIndex ? 'correct' : ''}">${letterFor(oi)}: ${escHtml(o)}</span>`).join('')}
+        </div>
+      </div>`).join('');
+    body = `<div class="question-list">${qList}</div>`;
+  } else if (act.type === 'poll') {
+    const opts = act.options.map(o => `<span class="poll-option-chip">${escHtml(o)}</span>`).join('');
+    body = `
+      <div class="text-sm text-muted mb-4">${escHtml(act.prompt)}</div>
+      <div class="poll-options-list">${opts}</div>`;
+  } else if (act.type === 'content') {
+    body = `<div class="content-preview">${escHtml(act.content)}</div>`;
+  }
+
+  return `
+    <div class="activity-card">
+      <div class="activity-card-header">
+        <div class="activity-type-icon ${actTypeClass(act.type)}">${actTypeIcon(act.type)}</div>
+        <div class="activity-card-title">
+          <div class="act-title">${escHtml(act.title)}</div>
+          <div class="act-type">${act.type}</div>
+        </div>
+        <span class="text-sm text-muted">#${index+1}</span>
+      </div>
+      <div class="activity-card-body">${body}</div>
+    </div>`;
+}
+
+function renderSessionPanel(prog) {
+  const session = state.session;
+
+  // No session active for this program
+  if (!session || session.programId !== prog.id) {
+    if (prog.status === 'draft') {
+      return `
+        <div class="card">
+          <div class="card-header"><h3>Session</h3></div>
+          <div class="card-body">
+            <div class="empty-state">
+              <div class="empty-icon">🔒</div>
+              <p>Publish this program before starting a session.</p>
+            </div>
+          </div>
+        </div>`;
+    }
+    if (session && session.status === 'ended') {
+      return `
+        <div class="card">
+          <div class="card-header"><h3>Session</h3></div>
+          <div class="card-body">
+            <div class="empty-state">
+              <div class="empty-icon">✅</div>
+              <p>Session ended. You can start a new session from the program header.</p>
+            </div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="card">
+        <div class="card-header"><h3>Session</h3></div>
+        <div class="card-body">
+          <div class="empty-state">
+            <div class="empty-icon">🚀</div>
+            <p>No active session. Click <strong>Start Session</strong> above.</p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const totalActs = prog.activities.length;
+  const currentIdx = session.currentActivityIndex;
+  const progressPct = totalActs > 0 ? Math.round((currentIdx / totalActs) * 100) : 0;
+  const currentAct = getCurrentActivity();
+  const currentRt = getCurrentRuntime();
+
+  const actListItems = prog.activities.map((a, i) => {
+    const rt = getActivityRuntime(a.id);
+    const rtState = rt ? rt.state : 'not_started';
+    const isActive = i === currentIdx && session.status === 'live';
+    return `
+      <div class="sa-item ${isActive ? 'sa-active' : ''} ${rtState === 'completed' ? 'sa-completed' : ''}">
+        <span class="sa-index">${i+1}</span>
+        <span class="sa-activity-type-icon">${actTypeIcon(a.type)}</span>
+        <span class="sa-title">${escHtml(a.title)}</span>
+        ${badgeHtml(rtState)}
+      </div>`;
+  }).join('');
+
+  let currentActivityControls = '';
+  if (session.status === 'live' && currentAct && currentRt) {
+    currentActivityControls = renderActivityControls(currentAct, currentRt, prog, currentIdx, totalActs);
+  }
+
+  const sessionEnded = session.status === 'ended';
+  return `
+    <div class="card session-panel">
+      <div class="card-header">
+        <h3>Session</h3>
+        ${badgeHtml(session.status, session.status === 'live' ? '● Live' : session.status)}
+      </div>
+      <div class="card-body">
+        <div class="session-status-bar">
+          <div class="session-info">
+            <span class="session-name">${escHtml(prog.title)}</span>
+            <span class="text-sm text-muted">${state.participants.length} participants</span>
+          </div>
+          ${!sessionEnded ? `
+          <div class="session-progress">
+            <div class="progress-pill"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+            <span class="progress-label">${currentIdx}/${totalActs}</span>
+          </div>` : ''}
+        </div>
+
+        ${currentActivityControls}
+
+        <div class="section-label">Activity Overview</div>
+        <div class="session-activities-list">${actListItems}</div>
+
+        ${!sessionEnded ? `<div class="mt-12"><button class="btn btn-danger btn-sm" data-action="end-session">End Session</button></div>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderActivityControls(act, rt, prog, currentIdx, totalActs) {
+  const isLast = currentIdx === totalActs - 1;
+  let html = `
+    <div class="current-activity-block">
+      <div class="ca-header">
+        <div class="activity-type-icon ${actTypeClass(act.type)}" style="width:28px;height:28px;font-size:13px;">${actTypeIcon(act.type)}</div>
+        <span class="ca-title">${escHtml(act.title)}</span>
+        ${badgeHtml(rt.state)}
+      </div>
+      <div class="activity-controls">`;
+
+  if (rt.state === 'not_started') {
+    html += `<div class="controls-row"><button class="btn btn-primary btn-sm" data-action="activate-activity">Activate Activity</button></div>`;
+  } else if (rt.state === 'active') {
+    if (act.type === 'quiz') {
+      html += renderQuizControls(act, rt);
+    } else if (act.type === 'poll') {
+      html += renderPollControls(act, rt);
+    } else if (act.type === 'content') {
+      html += renderContentControls(act, rt);
+    }
+  } else if (rt.state === 'completed') {
+    html += `<div class="controls-row">`;
+    if (!isLast) {
+      html += `<button class="btn btn-primary btn-sm" data-action="next-activity">Next Activity →</button>`;
+    } else {
+      html += `<button class="btn btn-success btn-sm" data-action="end-session">Finish Session ✓</button>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div></div>`;
+  return html;
+}
+
+function renderQuizControls(act, rt) {
+  const qi = rt.currentQuestionIndex;
+  const q = act.questions[qi];
+  const isLastQ = qi === act.questions.length - 1;
+  const counts = quizResponseCounts(act, qi);
+  const total = counts ? totalResponses(counts) : 0;
+  let html = '';
+
+  if (q) {
+    html += `
+      <div class="quiz-runtime">
+        <div class="qr-label">Question ${qi+1} / ${act.questions.length}</div>
+        <div class="qr-prompt">${escHtml(q.prompt)}</div>
+        ${badgeHtml(rt.questionState === 'collecting_answers' ? 'active' : 'completed',
+           rt.questionState === 'collecting_answers' ? 'Collecting answers' : 'Showing results')}
+      </div>`;
+  }
+
+  if (rt.questionState === 'collecting_answers') {
+    html += `
+      <div class="controls-row">
+        <span class="text-sm text-muted">${total} response${total !== 1 ? 's' : ''}</span>
+        <button class="btn btn-secondary btn-sm" data-action="quiz-close-question">Close Question</button>
+      </div>`;
+  } else {
+    // showing results
+    if (counts && q) {
+      html += renderLiveStatsQuiz(act, qi, counts);
+    }
+    html += `<div class="controls-row">`;
+    if (!isLastQ) {
+      html += `<button class="btn btn-primary btn-sm" data-action="quiz-next-question">Next Question →</button>`;
+    } else {
+      html += `<button class="btn btn-success btn-sm" data-action="quiz-finish">Finish Quiz ✓</button>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function renderPollControls(act, rt) {
+  const counts = pollResponseCounts(act);
+  const total = counts ? totalResponses(counts) : 0;
+  let html = '';
+
+  if (rt.pollState === 'idle') {
+    html += `<div class="controls-row"><button class="btn btn-primary btn-sm" data-action="poll-open">Open Voting</button></div>`;
+  } else if (rt.pollState === 'open') {
+    html += `
+      <div class="controls-row">
+        <span class="text-sm text-muted">${total} vote${total !== 1 ? 's' : ''}</span>
+        <button class="btn btn-secondary btn-sm" data-action="poll-close">Close Voting</button>
+      </div>`;
+  } else if (rt.pollState === 'closed') {
+    if (counts) html += renderLiveStatsPoll(act, counts);
+    html += `<div class="controls-row"><button class="btn btn-success btn-sm" data-action="poll-complete">Complete Activity ✓</button></div>`;
+  }
+  return html;
+}
+
+function renderContentControls(act, rt) {
+  return `
+    <div class="controls-row">
+      <span class="text-sm text-muted">Content is visible to participants</span>
+      <button class="btn btn-success btn-sm" data-action="content-complete">Mark Complete ✓</button>
+    </div>`;
+}
+
+function renderLiveStatsQuiz(act, qi, counts) {
+  const q = act.questions[qi];
+  const total = totalResponses(counts);
+  const rows = q.options.map((opt, i) => {
+    const pct = total > 0 ? Math.round((counts[i] / total) * 100) : 0;
+    const isCorrect = i === q.correctIndex;
+    return `
+      <div class="stat-option-row">
+        <span class="stat-option-name">${letterFor(i)}: ${escHtml(opt)}</span>
+        <div class="stat-bar-wrap">
+          <div class="stat-bar ${isCorrect ? 'correct' : 'wrong'}" style="width:${pct}%"></div>
+          <span class="stat-bar-label">${pct}%</span>
+        </div>
+        <span class="stat-count">${counts[i]}</span>
+        ${isCorrect ? '✓' : ''}
+      </div>`;
+  }).join('');
+  return `<div class="live-stats"><div class="ls-label">Results — ${total} response${total !== 1 ? 's' : ''}</div>${rows}</div>`;
+}
+
+function renderLiveStatsPoll(act, counts) {
+  const total = totalResponses(counts);
+  const rows = act.options.map((opt, i) => {
+    const pct = total > 0 ? Math.round((counts[i] / total) * 100) : 0;
+    return `
+      <div class="stat-option-row">
+        <span class="stat-option-name">${escHtml(opt)}</span>
+        <div class="stat-bar-wrap">
+          <div class="stat-bar poll-bar" style="width:${pct}%"></div>
+          <span class="stat-bar-label">${pct}%</span>
+        </div>
+        <span class="stat-count">${counts[i]}</span>
+      </div>`;
+  }).join('');
+  return `<div class="live-stats"><div class="ls-label">Results — ${total} vote${total !== 1 ? 's' : ''}</div>${rows}</div>`;
+}
+
+// ============================================================================
+// 6. RENDERING — PARTICIPANT PANELS
+// ============================================================================
+
+function renderParticipantPanels() {
+  const el = document.getElementById('participant-panels');
+  if (!el) return;
+  el.innerHTML = state.participants.map(p => renderParticipantPanel(p)).join('');
+}
+
+function renderParticipantPanel(participant) {
+  const avatarClass = participant.name.includes('A') ? 'avatar-a' : 'avatar-b';
+  const initials = participant.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+
+  const body = renderParticipantBody(participant);
+
+  return `
+    <div class="participant-panel">
+      <div class="pp-header">
+        <div class="pp-avatar ${avatarClass}">${initials}</div>
+        <div>
+          <div class="pp-name">${escHtml(participant.name)}</div>
+          <div class="pp-role">Participant</div>
+        </div>
+        ${state.session && state.session.status === 'live' ? badgeHtml('live', '● Live') : ''}
+      </div>
+      <div class="pp-body">${body}</div>
+    </div>`;
+}
+
+function renderParticipantBody(participant) {
+  if (!state.session || state.session.status === 'scheduled') {
+    return `<div class="pp-waiting"><div class="wait-icon">⏳</div><p>Waiting for session to start…</p></div>`;
+  }
+  if (state.session.status === 'ended') {
+    return `<div class="pp-waiting"><div class="wait-icon">🎉</div><p>Session has ended. Thanks for participating!</p></div>`;
+  }
+
+  const act = getCurrentActivity();
+  const rt = getCurrentRuntime();
+  if (!act || !rt) {
+    return `<div class="pp-waiting"><div class="wait-icon">⏳</div><p>Waiting for moderator…</p></div>`;
+  }
+
+  if (rt.state === 'not_started') {
+    return `<div class="pp-waiting"><div class="wait-icon">⏳</div><p>Waiting for moderator to start the activity…</p></div>`;
+  }
+  if (rt.state === 'completed') {
+    return `<div class="pp-waiting"><div class="wait-icon">✅</div><p>Activity completed. Moving on soon…</p></div>`;
+  }
+
+  // Active activity
+  if (act.type === 'content') {
+    return `
+      <div class="pp-activity-title">Content</div>
+      <div class="pp-prompt" style="margin-bottom:8px">${escHtml(act.title)}</div>
+      <div class="pp-content-text">${escHtml(act.content)}</div>`;
+  }
+
+  if (act.type === 'quiz') {
+    return renderParticipantQuiz(participant, act, rt);
+  }
+
+  if (act.type === 'poll') {
+    return renderParticipantPoll(participant, act, rt);
+  }
+
+  return `<div class="pp-waiting"><div class="wait-icon">⏳</div><p>Waiting…</p></div>`;
+}
+
+function renderParticipantQuiz(participant, act, rt) {
+  const qi = rt.currentQuestionIndex;
+  const q = act.questions[qi];
+  if (!q) return `<div class="pp-waiting"><p>No question available</p></div>`;
+
+  const key = responseKey(state.session.id, act.id, q.id);
+  const myAnswer = participant.responses[key];
+  const hasAnswered = myAnswer !== undefined;
+  const showResults = rt.questionState === 'showing_results';
+
+  let html = `
+    <div class="pp-activity-title">Quiz — Q${qi+1}/${act.questions.length}</div>
+    <div class="pp-prompt">${escHtml(q.prompt)}</div>
+    <div class="pp-options">`;
+
+  q.options.forEach((opt, i) => {
+    let cls = '';
+    let disabled = '';
+    if (showResults) {
+      disabled = 'disabled';
+      if (i === q.correctIndex && hasAnswered && myAnswer === i) cls = 'correct';
+      else if (i === q.correctIndex) cls = 'correct';
+      else if (hasAnswered && myAnswer === i) cls = 'wrong';
+    } else {
+      if (hasAnswered) disabled = 'disabled';
+      if (hasAnswered && myAnswer === i) cls = 'selected';
+    }
+    html += `
+      <button class="pp-option-btn ${cls}" ${disabled}
+        data-action="participant-quiz-answer"
+        data-participant-id="${participant.id}"
+        data-activity-id="${act.id}"
+        data-question-id="${q.id}"
+        data-option-index="${i}">
+        <span class="pp-option-letter">${letterFor(i)}</span>
+        ${escHtml(opt)}
+      </button>`;
+  });
+
+  html += `</div>`;
+
+  if (showResults && hasAnswered) {
+    const isCorrect = myAnswer === q.correctIndex;
+    html += `<div class="pp-result-hint ${isCorrect ? 'correct-hint' : 'wrong-hint'}">
+      ${isCorrect ? '✓ Correct!' : `✗ Incorrect — correct: ${letterFor(q.correctIndex)}`}
+    </div>`;
+  } else if (showResults && !hasAnswered) {
+    html += `<div class="pp-result-hint wrong-hint">⚠ No answer submitted — correct: ${letterFor(q.correctIndex)}</div>`;
+  } else if (hasAnswered) {
+    html += `<div class="pp-result-hint" style="color:var(--text-muted)">✓ Answer submitted — waiting for results…</div>`;
+  }
+
+  return html;
+}
+
+function renderParticipantPoll(participant, act, rt) {
+  const key = responseKey(state.session.id, act.id, null);
+  const myVote = participant.responses[key];
+  const hasVoted = myVote !== undefined;
+  const isOpen = rt.pollState === 'open';
+  const showResults = rt.pollState === 'closed';
+
+  let html = `
+    <div class="pp-activity-title">Poll</div>
+    <div class="pp-prompt">${escHtml(act.prompt)}</div>
+    <div class="pp-options">`;
+
+  const counts = pollResponseCounts(act);
+  const total = counts ? totalResponses(counts) : 0;
+
+  act.options.forEach((opt, i) => {
+    let cls = '';
+    let disabled = '';
+    if (!isOpen || hasVoted) disabled = 'disabled';
+    if (hasVoted && myVote === i) cls = 'poll-voted';
+    html += `
+      <button class="pp-option-btn ${cls}" ${disabled}
+        data-action="participant-poll-vote"
+        data-participant-id="${participant.id}"
+        data-activity-id="${act.id}"
+        data-option-index="${i}">
+        <span class="pp-option-letter">${letterFor(i)}</span>
+        ${escHtml(opt)}
+        ${showResults && counts ? `<span style="margin-left:auto;font-size:11px;color:var(--text-muted)">${total > 0 ? Math.round((counts[i]/total)*100) : 0}%</span>` : ''}
+      </button>`;
+  });
+
+  html += `</div>`;
+
+  if (!isOpen && !hasVoted && rt.pollState !== 'idle') {
+    html += `<div class="pp-result-hint" style="color:var(--text-muted)">Voting is closed.</div>`;
+  } else if (hasVoted) {
+    html += `<div class="pp-result-hint" style="color:var(--text-muted)">✓ Vote submitted.</div>`;
+  } else if (isOpen) {
+    html += `<div class="pp-result-hint" style="color:var(--text-muted)">Select an option to vote.</div>`;
+  } else {
+    html += `<div class="pp-waiting" style="padding:8px 0"><p>Waiting for poll to open…</p></div>`;
+  }
+
+  return html;
+}
+
+// ============================================================================
+// 7. MODAL SYSTEM
+// ============================================================================
+
+function openModal(html, onConfirm) {
+  const overlay = document.getElementById('modal-overlay');
+  const box = document.getElementById('modal-box');
+  box.innerHTML = html;
+  overlay.classList.remove('hidden');
+  // attach confirm handler
+  const confirmBtn = box.querySelector('[data-modal-confirm]');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      if (onConfirm) onConfirm(box);
+      closeModal();
+    });
+  }
+  const cancelBtn = box.querySelector('[data-modal-cancel]');
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+function showNewProgramModal() {
+  openModal(`
+    <div class="modal-header">
+      <h3>New Program</h3>
+      <button class="btn btn-ghost btn-icon" data-modal-cancel>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="new-prog-title">Program Title</label>
+        <input type="text" id="new-prog-title" placeholder="e.g. Q4 Kickoff Workshop" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-cancel>Cancel</button>
+      <button class="btn btn-primary" data-modal-confirm>Create Program</button>
+    </div>`, (box) => {
+    const title = box.querySelector('#new-prog-title').value.trim();
+    if (!title) return;
+    actionCreateProgram(title);
+  });
+
+  setTimeout(() => {
+    const inp = document.getElementById('new-prog-title');
+    if (inp) inp.focus();
+  }, 50);
+}
+
+// ============================================================================
+// 8. EVENT HANDLERS / ACTIONS
+// ============================================================================
+
+function actionCreateProgram(title) {
+  const prog = { id: uid(), title, status: 'draft', activities: [] };
+  state.programs.push(prog);
+  state.selectedProgramId = prog.id;
+  render();
+}
+
+function actionPublishProgram(id) {
+  const prog = getProgram(id);
+  if (prog) prog.status = 'published';
+  render();
+}
+
+function actionSelectProgram(id) {
+  state.selectedProgramId = id;
+  render();
+}
+
+function actionAddActivity(type, progId) {
+  const prog = getProgram(progId);
+  if (!prog) return;
+  let act;
+  if (type === 'quiz') {
+    act = {
+      id: uid(),
+      type: 'quiz',
+      title: 'New Quiz',
+      questions: [
+        { id: uid(), prompt: 'Sample question?', options: ['Option A', 'Option B', 'Option C', 'Option D'], correctIndex: 0 },
+      ],
+    };
+  } else if (type === 'poll') {
+    act = {
+      id: uid(),
+      type: 'poll',
+      title: 'New Poll',
+      prompt: 'What do you think?',
+      options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    };
+  } else {
+    act = {
+      id: uid(),
+      type: 'content',
+      title: 'New Content',
+      content: 'Add your content text here.',
+    };
+  }
+  prog.activities.push(act);
+  render();
+}
+
+function actionStartSession(programId) {
+  const prog = getProgram(programId);
+  if (!prog || prog.status !== 'published') return;
+  // clear participant responses for new session
+  const sessionId = uid();
+  state.participants.forEach(p => { p.responses = {}; });
+  state.session = {
+    id: sessionId,
+    programId,
+    status: 'live',
+    currentActivityIndex: 0,
+    activityRuntimes: prog.activities.map(a => initActivityRuntime(a)),
+  };
+  render();
+}
+
+function actionEndSession() {
+  if (!state.session) return;
+  state.session.status = 'ended';
+  render();
+}
+
+function actionActivateActivity() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.state = 'active';
+  // For quiz: open first question
+  if (rt.currentQuestionIndex === undefined) rt.currentQuestionIndex = 0;
+  if (rt.questionState === undefined) {
+    const act = getCurrentActivity();
+    if (act && act.type === 'quiz') rt.questionState = 'collecting_answers';
+  }
+  // For poll: go to idle
+  if (rt.pollState === undefined) {
+    const act = getCurrentActivity();
+    if (act && act.type === 'poll') rt.pollState = 'idle';
+  }
+  render();
+}
+
+function actionNextActivity() {
+  if (!state.session) return;
+  const prog = getProgram(state.session.programId);
+  if (!prog) return;
+  const next = state.session.currentActivityIndex + 1;
+  if (next < prog.activities.length) {
+    state.session.currentActivityIndex = next;
+    render();
+  }
+}
+
+// Quiz actions
+function actionQuizCloseQuestion() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.questionState = 'showing_results';
+  render();
+}
+
+function actionQuizNextQuestion() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.currentQuestionIndex++;
+  rt.questionState = 'collecting_answers';
+  render();
+}
+
+function actionQuizFinish() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.state = 'completed';
+  render();
+}
+
+// Poll actions
+function actionPollOpen() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.pollState = 'open';
+  render();
+}
+
+function actionPollClose() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.pollState = 'closed';
+  render();
+}
+
+function actionPollComplete() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.state = 'completed';
+  render();
+}
+
+// Content actions
+function actionContentComplete() {
+  const rt = getCurrentRuntime();
+  if (!rt) return;
+  rt.state = 'completed';
+  render();
+}
+
+// Participant interactions
+function actionParticipantQuizAnswer(participantId, activityId, questionId, optionIndex) {
+  const participant = state.participants.find(p => p.id === participantId);
+  if (!participant) return;
+  const rt = getActivityRuntime(activityId);
+  if (!rt || rt.state !== 'active' || rt.questionState !== 'collecting_answers') return;
+  const key = responseKey(state.session.id, activityId, questionId);
+  if (participant.responses[key] !== undefined) return; // already answered
+  participant.responses[key] = optionIndex;
+  render();
+}
+
+function actionParticipantPollVote(participantId, activityId, optionIndex) {
+  const participant = state.participants.find(p => p.id === participantId);
+  if (!participant) return;
+  const rt = getActivityRuntime(activityId);
+  if (!rt || rt.pollState !== 'open') return;
+  const key = responseKey(state.session.id, activityId, null);
+  if (participant.responses[key] !== undefined) return; // already voted
+  participant.responses[key] = optionIndex;
+  render();
+}
+
+// Delegated click handler
+function handleClick(e) {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+
+  const action = target.dataset.action;
+  switch (action) {
+    case 'select-program':
+      actionSelectProgram(+target.dataset.programId);
+      break;
+    case 'publish-program':
+      actionPublishProgram(+target.dataset.id);
+      break;
+    case 'add-activity':
+      actionAddActivity(target.dataset.type, +target.dataset.progId);
+      break;
+    case 'start-session':
+      actionStartSession(+target.dataset.id);
+      break;
+    case 'end-session':
+      actionEndSession();
+      break;
+    case 'activate-activity':
+      actionActivateActivity();
+      break;
+    case 'next-activity':
+      actionNextActivity();
+      break;
+    case 'quiz-close-question':
+      actionQuizCloseQuestion();
+      break;
+    case 'quiz-next-question':
+      actionQuizNextQuestion();
+      break;
+    case 'quiz-finish':
+      actionQuizFinish();
+      break;
+    case 'poll-open':
+      actionPollOpen();
+      break;
+    case 'poll-close':
+      actionPollClose();
+      break;
+    case 'poll-complete':
+      actionPollComplete();
+      break;
+    case 'content-complete':
+      actionContentComplete();
+      break;
+    case 'participant-quiz-answer':
+      actionParticipantQuizAnswer(
+        +target.dataset.participantId,
+        +target.dataset.activityId,
+        +target.dataset.questionId,
+        +target.dataset.optionIndex
+      );
+      break;
+    case 'participant-poll-vote':
+      actionParticipantPollVote(
+        +target.dataset.participantId,
+        +target.dataset.activityId,
+        +target.dataset.optionIndex
+      );
+      break;
+  }
+}
+
+// Program item click (sidebar)
+function handleSidebarClick(e) {
+  const item = e.target.closest('.program-item');
+  if (item && item.dataset.programId) {
+    actionSelectProgram(+item.dataset.programId);
+  }
+}
+
+// ============================================================================
+// HTML ESCAPING
+// ============================================================================
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ============================================================================
+// MASTER RENDER
+// ============================================================================
+function render() {
+  renderProgramList();
+  renderMain();
+  renderParticipantPanels();
+}
+
+// ============================================================================
+// 9. BOOTSTRAP
+// ============================================================================
+function boot() {
+  seedData();
+
+  // Wire events
+  document.getElementById('btn-new-program').addEventListener('click', showNewProgramModal);
+  document.getElementById('program-list').addEventListener('click', handleSidebarClick);
+  document.body.addEventListener('click', handleClick);
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+
+  render();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
